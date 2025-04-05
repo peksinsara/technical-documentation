@@ -46,7 +46,6 @@
         </div>
       </div>
     </div>
-
   </div>
 </template>
 
@@ -58,36 +57,4 @@ import {
   UserGroupIcon,
   CloudArrowUpIcon,
 } from "@heroicons/vue/24/outline";
-
-const features = [
-  {
-    name: "Markdown Support",
-    description:
-      "Write documentation using Markdown with syntax highlighting and preview.",
-    icon: DocumentTextIcon,
-  },
-  {
-    name: "Code Snippets",
-    description:
-      "Include code snippets with syntax highlighting for multiple languages.",
-    icon: CodeBracketIcon,
-  },
-  {
-    name: "Diagrams",
-    description: "Create and embed diagrams using Mermaid and PlantUML.",
-    icon: ChartBarIcon,
-  },
-  {
-    name: "Collaboration",
-    description:
-      "Work together with your team in real-time with comments and reviews.",
-    icon: UserGroupIcon,
-  },
-  {
-    name: "Version Control",
-    description:
-      "Track changes and maintain document history with version control.",
-    icon: CloudArrowUpIcon,
-  },
-];
 </script>

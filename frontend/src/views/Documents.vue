@@ -1,116 +1,198 @@
 <template>
-  <div class="w-full">
-    <div class="space-y-6">
-      <div class="flex justify-between items-center">
-        <h1 class="text-3xl font-bold text-dark-100 text-left">Documents</h1>
-        <button class="btn btn-primary" @click="showEditor = true">
-          New Document
-        </button>
+  <div class="container mx-auto px-4 py-8 max-w-7xl text-left">
+    <div class="flex justify-between items-center">
+      <h1 class="text-3xl font-bold text-dark-100">Documents</h1>
+    </div>
+
+    <!-- Search and Filter -->
+    <div class="mb-6">
+      <div class="flex items-center space-x-4">
+        <div class="relative flex-1">
+          <input
+            v-model="searchQuery"
+            type="text"
+            placeholder="Search documents..."
+            class="input pl-10 w-full"
+          />
+          <span
+            class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-5 w-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+              />
+            </svg>
+          </span>
+        </div>
       </div>
+    </div>
 
-      <DocumentEditor
-        v-if="showEditor"
-        :initial-document="editingDocument"
-        :is-editing="!!editingDocument"
-        @save="handleSave"
-        @cancel="handleCancel"
-      />
-
-      <DocumentViewer
-        v-else-if="viewingDocument"
-        :document="viewingDocument"
-        @close="handleCloseViewer"
-        @edit="handleEdit(viewingDocument)"
-      />
-
-      <div v-else class="space-y-6">
-        <div
-          class="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4"
-        >
-          <div class="flex-1">
-            <input
-              type="text"
-              placeholder="Search documents..."
-              class="input w-full text-left"
-              v-model="searchQuery"
-            />
+    <!-- Document Editor Modal -->
+    <div
+      v-if="showEditor"
+      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+    >
+      <div
+        class="bg-dark-800 rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto"
+      >
+        <div class="px-6 py-4 border-b border-dark-700">
+          <div class="flex items-center justify-between">
+            <h3 class="text-lg font-medium text-dark-100">
+              {{ editingDocument ? "Edit Document" : "New Document" }}
+            </h3>
+            <button
+              @click="showEditor = false"
+              class="text-dark-400 hover:text-dark-300"
+            >
+              <span class="sr-only">Close</span>
+              <svg
+                class="h-6 w-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
           </div>
-          <select class="input w-full sm:w-48 text-left" v-model="selectedTag">
-            <option value="">All Tags</option>
-            <option v-for="tag in availableTags" :key="tag" :value="tag">
-              {{ tag }}
-            </option>
-          </select>
+        </div>
+        <div class="px-6 py-4">
+          <DocumentEditor
+            :initial-document="editingDocument"
+            :is-editing="!!editingDocument"
+            @save="handleSave"
+            @cancel="showEditor = false"
+          />
+        </div>
+      </div>
+    </div>
+
+    <!-- Document Viewer Modal -->
+    <div
+      v-if="showViewer"
+      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+    >
+      <div
+        class="bg-dark-800 rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto"
+      >
+        <div class="px-6 py-4 border-b border-dark-700">
+          <div class="flex items-center justify-between">
+            <h3 class="text-lg font-medium text-dark-100">
+              {{ viewingDocument?.title }}
+            </h3>
+            <button
+              @click="showViewer = false"
+              class="text-dark-400 hover:text-dark-300"
+            >
+              <span class="sr-only">Close</span>
+              <svg
+                class="h-6 w-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
+          </div>
+        </div>
+        <div class="px-6 py-4">
+          <DocumentViewer
+            :document="viewingDocument"
+            @close="showViewer = false"
+            @edit="editDocument(viewingDocument)"
+          />
+        </div>
+      </div>
+    </div>
+
+    <!-- Document List -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div
+        v-for="doc in filteredDocuments"
+        :key="doc.ID"
+        class="card hover:shadow-lg transition-shadow duration-200 cursor-pointer flex flex-col"
+        @click="viewDocument(doc)"
+      >
+        <div class="flex-1">
+          <div class="flex justify-between items-start mb-4">
+            <h2
+              class="text-xl font-semibold cursor-pointer hover:text-primary-500 transition-colors"
+            >
+              {{ doc.title }}
+            </h2>
+            <span class="px-2 py-1 text-sm">
+              {{ doc.type }}
+            </span>
+          </div>
+
+          <p class="text-gray-600 mb-4">{{ doc.description }}</p>
+
+          <div class="mb-4">
+            <span class="text-sm font-medium text-gray-500">Category:</span>
+            <span class="ml-2 text-sm">{{ doc.category }}</span>
+          </div>
+
+          <div v-if="doc.serviceId" class="mb-4">
+            <span class="text-sm font-medium text-gray-500">Service:</span>
+            <span class="ml-2 text-sm">{{
+              getServiceName(doc.serviceId)
+            }}</span>
+          </div>
+
+          <div class="flex flex-wrap gap-2 mb-4">
+            <span
+              v-for="(tag, index) in doc.tags"
+              :key="tag.name"
+              class="px-3 py-1 text-xs text-white rounded-full"
+              :style="{
+                backgroundImage:
+                  index % 4 === 0
+                    ? 'linear-gradient(to right, #3B82F6, #2563EB)'
+                    : index % 4 === 1
+                    ? 'linear-gradient(to right, #8B5CF6, #7C3AED)'
+                    : index % 4 === 2
+                    ? 'linear-gradient(to right, #10B981, #059669)'
+                    : 'linear-gradient(to right, #EC4899, #DB2777)',
+              }"
+            >
+              {{ tag.name }}
+            </span>
+          </div>
         </div>
 
-        <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          <div
-            v-for="doc in filteredDocuments"
-            :key="doc.id"
-            class="card hover:bg-dark-700 transition-colors duration-200 flex flex-col"
+        <div class="flex justify-end items-center space-x-4 mt-auto pt-4">
+          <button
+            @click.stop="openEditModal(doc)"
+            class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
           >
-            <div class="flex-1">
-              <div class="flex justify-between items-start">
-                <h3 class="text-lg font-medium text-dark-100 text-left">
-                  {{ doc.title }}
-                </h3>
-              </div>
-              <p class="mt-2 text-dark-400 text-left text-line-clamp-2">
-                {{ doc.description }}
-              </p>
-
-              <div class="mt-4 flex flex-wrap gap-2">
-                <span
-                  v-for="tag in doc.tags"
-                  :key="tag"
-                  class="px-2 py-1 text-xs font-medium rounded-full bg-primary-100 text-primary-800 text-left"
-                >
-                  {{ tag }}
-                </span>
-              </div>
-
-              <div class="mt-4 flex items-center justify-between">
-                <div class="flex items-center space-x-2">
-                  <img
-                    :src="doc.author.avatar"
-                    :alt="doc.author.name"
-                    class="h-6 w-6 rounded-full"
-                  />
-                  <span
-                    class="text-sm text-dark-400 text-left text-left text-left"
-                  >
-                    {{ doc.author.name }}
-                  </span>
-                </div>
-                <span
-                  class="text-sm text-dark-400 text-left text-left text-left"
-                >
-                  {{ doc.lastUpdated }}
-                </span>
-              </div>
-            </div>
-
-            <div class="mt-4 flex space-x-2 pt-4 border-t border-dark-700">
-              <button
-                class="text-sm text-primary-500 hover:text-primary-400 text-left"
-                @click="handleEdit(doc)"
-              >
-                Edit
-              </button>
-              <button
-                class="text-sm text-primary-500 hover:text-primary-400 text-left"
-                @click="handleView(doc)"
-              >
-                View
-              </button>
-              <button
-                class="text-sm text-red-500 hover:text-red-400 text-left"
-                @click="handleDelete(doc)"
-              >
-                Delete
-              </button>
-            </div>
-          </div>
+            Edit
+          </button>
+          <button
+            @click.stop="handleDelete(doc)"
+            class="px-2 py-2 bg-red-500 text-white rounded hover:bg-red-700 transition-colors"
+          >
+            Delete
+          </button>
         </div>
       </div>
     </div>
@@ -118,148 +200,122 @@
 </template>
 
 <script setup>
-import { ref, computed } from "vue";
+import { ref, computed, onMounted } from "vue";
+import { useDocumentStore } from "../stores/document";
+import { useServiceStore } from "../stores/service";
+import { useAuthStore } from "../stores/auth";
 import DocumentEditor from "../components/DocumentEditor.vue";
 import DocumentViewer from "../components/DocumentViewer.vue";
 
-const searchQuery = ref("");
-const selectedTag = ref("");
+const documentStore = useDocumentStore();
+const serviceStore = useServiceStore();
+const authStore = useAuthStore();
+const documents = ref([]);
 const showEditor = ref(false);
 const editingDocument = ref(null);
+const showViewer = ref(false);
 const viewingDocument = ref(null);
+const searchQuery = ref("");
 
-const availableTags = [
-  "api",
-  "database",
-  "cache",
-  "queue",
-  "monitoring",
-  "auth",
-  "storage",
-  "search",
-  "documentation",
-  "guide",
-  "tutorial",
-];
+onMounted(async () => {
+  if (!authStore.isAuthenticated) {
+    return;
+  }
 
-const documents = ref([
-  {
-    id: 1,
-    title: "API Documentation",
-    description:
-      "Comprehensive guide to our REST API endpoints and authentication",
-    type: "document",
-    category: "Documentation",
-    tags: ["api", "documentation", "auth"],
-    content:
-      "# API Documentation\n\nThis is a comprehensive guide to our REST API endpoints and authentication.\n\n## Authentication\n\n```javascript\nconst token = await api.authenticate({\n  username: 'user',\n  password: 'pass'\n});\n```\n\n## Endpoints\n\n### Users\n\n- `GET /api/users` - List all users\n- `POST /api/users` - Create a new user\n- `GET /api/users/:id` - Get user details",
-    author: {
-      name: "Sara Peksin",
-      avatar: "https://ui-avatars.com/api/?name=John+Doe",
-    },
-    lastUpdated: "2024-03-15",
-  },
-  {
-    id: 2,
-    title: "Database Schema",
-    description:
-      "Detailed documentation of our database structure and relationships",
-    type: "diagram",
-    category: "Technical",
-    tags: ["database", "documentation", "er-diagram"],
-    content:
-      "# Database Schema\n\n## Tables\n\n### Users\n\n```sql\nCREATE TABLE users (\n  id INT PRIMARY KEY AUTO_INCREMENT,\n  username VARCHAR(255) NOT NULL,\n  email VARCHAR(255) NOT NULL UNIQUE,\n  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP\n);\n```\n\n### Documents\n\n```sql\nCREATE TABLE documents (\n  id INT PRIMARY KEY AUTO_INCREMENT,\n  title VARCHAR(255) NOT NULL,\n  content TEXT,\n  user_id INT,\n  FOREIGN KEY (user_id) REFERENCES users(id)\n);\n```",
-    author: {
-      name: "Sara Peksin",
-      avatar: "https://ui-avatars.com/api/?name=Jane+Smith",
-    },
-    lastUpdated: "2024-03-14",
-  },
-  {
-    id: 3,
-    title: "Omnichannel Service",
-    description:
-      "Service for handling customer interactions across multiple channels",
-    type: "service",
-    category: "Architecture",
-    tags: ["omnichannel", "api", "service"],
-    content:
-      "# Omnichannel Service\n\n## Overview\n\nThe Omnichannel Service handles customer interactions across multiple channels including:\n\n- Web chat\n- Email\n- SMS\n- Social media\n\n## Architecture\n\n```mermaid\ngraph TD\n    A[Client] --> B[API Gateway]\n    B --> C[Omnichannel Service]\n    C --> D[Message Queue]\n    D --> E[Channel Handlers]\n    E --> F[External APIs]\n```\n\n## Configuration\n\n```yaml\nchannels:\n  web:\n    enabled: true\n    max_concurrent: 100\n  email:\n    enabled: true\n    smtp_server: smtp.example.com\n  sms:\n    enabled: true\n    provider: twilio\n```",
-    author: {
-      name: "Sara Peksin",
-      avatar: "https://ui-avatars.com/api/?name=Mike+Johnson",
-    },
-    lastUpdated: "2024-03-13",
-  },
-]);
+  try {
+    await Promise.all([
+      documentStore.fetchDocuments(),
+      serviceStore.fetchServices(),
+    ]);
+    documents.value = documentStore.documents;
+  } catch (error) {
+    console.error("Failed to fetch data:", error);
+  }
+});
 
+// Filter documents by search query
 const filteredDocuments = computed(() => {
   return documents.value.filter((doc) => {
     const matchesSearch =
       doc.title.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-      doc.description.toLowerCase().includes(searchQuery.value.toLowerCase());
-    const matchesTag =
-      !selectedTag.value || (doc.tags && doc.tags.includes(selectedTag.value));
-    return matchesSearch && matchesTag;
+      doc.description.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
+      doc.category.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
+      doc.tags.some((tag) =>
+        tag.toLowerCase().includes(searchQuery.value.toLowerCase())
+      );
+
+    return matchesSearch;
   });
 });
 
-const handleSave = async (document) => {
-  // Ensure tags is an array
-  if (!document.tags) {
-    document.tags = [];
-  }
-
-  if (editingDocument.value) {
-    // Update existing document
-    const index = documents.value.findIndex(
-      (d) => d.id === editingDocument.value.id
-    );
-    if (index !== -1) {
-      documents.value[index] = {
-        ...document,
-        id: editingDocument.value.id,
-        author: editingDocument.value.author,
-        lastUpdated: new Date().toISOString().split("T")[0],
-      };
-    }
-  } else {
-    // Create new document
-    documents.value.push({
-      ...document,
-      id: documents.value.length + 1,
-      author: {
-        name: "Current User",
-        avatar: "https://ui-avatars.com/api/?name=Current+User",
-      },
-      lastUpdated: new Date().toISOString().split("T")[0],
-    });
-  }
-  showEditor.value = false;
-  editingDocument.value = null;
+const getServiceName = (serviceId) => {
+  const service = serviceStore.services.find((s) => s.ID === serviceId);
+  return service ? service.name : "Unknown Service";
 };
 
-const handleCancel = () => {
-  showEditor.value = false;
+const createNewDocument = () => {
   editingDocument.value = null;
-};
-
-const handleEdit = (doc) => {
-  editingDocument.value = { ...doc };
   showEditor.value = true;
 };
 
-const handleView = (doc) => {
-  viewingDocument.value = { ...doc };
+const viewDocument = (doc) => {
+  if (!doc.ID) {
+    return;
+  }
+
+  // Create a link element and click it to open in a new tab
+  const link = document.createElement("a");
+  link.href = `/document/${doc.ID}`;
+  link.target = "_blank";
+  link.rel = "noopener noreferrer";
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
 };
 
-const handleCloseViewer = () => {
-  viewingDocument.value = null;
+const editDocument = (doc) => {
+  editingDocument.value = { ...doc };
+  showEditor.value = true;
+  showViewer.value = false;
 };
 
-const handleDelete = (doc) => {
+const deleteDocument = async (id) => {
   if (confirm("Are you sure you want to delete this document?")) {
-    documents.value = documents.value.filter((d) => d.id !== doc.id);
+    try {
+      await documentStore.deleteDocument(id);
+      documents.value = documentStore.documents;
+    } catch (error) {
+      console.error("Failed to delete document:", error);
+    }
+  }
+};
+
+const handleSave = async (document) => {
+  try {
+    if (editingDocument.value) {
+      await documentStore.updateDocument({
+        ...document,
+        id: editingDocument.value.id,
+      });
+    } else {
+      await documentStore.createDocument(document);
+    }
+    documents.value = documentStore.documents;
+    showEditor.value = false;
+    editingDocument.value = null;
+  } catch (error) {
+    console.error("Failed to save document:", error);
+  }
+};
+
+const handleDelete = async (doc) => {
+  if (confirm(`Are you sure you want to delete "${doc.title}"?`)) {
+    try {
+      await documentStore.deleteDocument(doc.ID);
+      documents.value = documents.value.filter((d) => d.ID !== doc.ID);
+    } catch (error) {
+      alert("Failed to delete document. Please try again.");
+    }
   }
 };
 </script>

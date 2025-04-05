@@ -45,7 +45,9 @@
             />
           </div>
           <div>
-            <label for="confirmPassword" class="sr-only">Confirm Password</label>
+            <label for="confirmPassword" class="sr-only"
+              >Confirm Password</label
+            >
             <input
               id="confirmPassword"
               v-model="confirmPassword"
@@ -68,7 +70,7 @@
             class="btn btn-primary w-full"
             :disabled="loading"
           >
-            {{ loading ? 'Creating account...' : 'Create account' }}
+            {{ loading ? "Creating account..." : "Create account" }}
           </button>
         </div>
 
@@ -81,45 +83,50 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
-import { useRouter } from 'vue-router'
-import { useAuthStore } from '../stores/auth'
+import { ref, computed } from "vue";
+import { useRouter } from "vue-router";
+import { useAuthStore } from "../stores/auth";
 
-const router = useRouter()
-const authStore = useAuthStore()
+const router = useRouter();
+const authStore = useAuthStore();
 
-const username = ref('')
-const email = ref('')
-const password = ref('')
-const confirmPassword = ref('')
-const loading = ref(false)
-const error = ref('')
+const username = ref("");
+const email = ref("");
+const password = ref("");
+const confirmPassword = ref("");
+const loading = ref(false);
+const error = ref("");
 
 const passwordError = computed(() => {
   if (password.value.length < 6) {
-    return 'Password must be at least 6 characters long'
+    return "Password must be at least 6 characters long";
   }
   if (password.value !== confirmPassword.value) {
-    return 'Passwords do not match'
+    return "Passwords do not match";
   }
-  return ''
-})
+  return "";
+});
 
 const handleSubmit = async () => {
   if (passwordError.value) {
-    error.value = passwordError.value
-    return
+    error.value = passwordError.value;
+    return;
   }
 
   try {
-    loading.value = true
-    error.value = ''
-    await authStore.register(username.value, email.value, password.value)
-    router.push('/documents')
+    loading.value = true;
+    error.value = "";
+    const userData = {
+      username: username.value,
+      email: email.value,
+      password: password.value,
+    };
+    await authStore.register(userData);
+    router.push("/documents");
   } catch (err) {
-    error.value = err.response?.data?.error || 'Failed to create account'
+    error.value = err.response?.data?.error || "Failed to create account";
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
-</script> 
+};
+</script>

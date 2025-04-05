@@ -41,6 +41,25 @@
             </select>
           </div>
 
+          <div v-if="document.type === 'service'" class="space-y-2 mt-4">
+            <label class="block text-sm font-medium text-dark-300"
+              >Service</label
+            >
+            <select v-model="document.serviceId" class="input">
+              <option value="">Select a service</option>
+              <option
+                v-for="service in services"
+                :key="service.ID"
+                :value="service.ID"
+              >
+                {{ service.name }}
+              </option>
+            </select>
+            <p v-if="services.length === 0" class="text-xs text-red-500 mt-1">
+              No services available. Please contact an administrator.
+            </p>
+          </div>
+
           <div class="space-y-2 mt-4">
             <label class="block text-sm font-medium text-dark-300"
               >Category</label
@@ -125,7 +144,7 @@
           <div v-if="!previewMode" class="space-y-4">
             <textarea
               v-model="document.content"
-              class="input font-mono h-[600px]"
+              class="input font-mono h-[400px]"
               placeholder="Write your content here..."
             ></textarea>
           </div>
@@ -143,6 +162,8 @@ import { ref, computed, onMounted } from "vue";
 import { marked } from "marked";
 import hljs from "highlight.js";
 import "highlight.js/styles/github-dark.css";
+import { useServiceStore } from "../stores/service";
+import { useAuthStore } from "../stores/auth";
 
 const props = defineProps({
   initialDocument: {
@@ -154,6 +175,7 @@ const props = defineProps({
       category: "",
       tags: [],
       content: "",
+      serviceId: null,
     }),
   },
   isEditing: {
@@ -163,15 +185,62 @@ const props = defineProps({
 });
 
 const emit = defineEmits(["save", "cancel"]);
+const serviceStore = useServiceStore();
+const authStore = useAuthStore();
 
 const document = ref({ ...props.initialDocument });
 const previewMode = ref(false);
 const saving = ref(false);
+const services = ref([]);
 
 // Ensure document.tags is always an array
 if (!document.value.tags) {
   document.value.tags = [];
 }
+
+// Fetch services when component is mounted
+onMounted(async () => {
+  if (!authStore.isAuthenticated) {
+    return;
+  }
+
+  try {
+    await serviceStore.fetchServices();
+    services.value = serviceStore.services;
+
+    // If we're creating a new document and a service ID was passed in the URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const serviceId = urlParams.get("serviceId");
+    if (serviceId && !props.isEditing) {
+      // Ensure serviceId is a number
+      const numericServiceId = parseInt(serviceId, 10);
+      if (!isNaN(numericServiceId)) {
+        document.value.serviceId = numericServiceId;
+        document.value.type = "service";
+      }
+    }
+  } catch (error) {
+    console.error("Failed to load services:", error);
+  }
+
+  // Initialize with empty document if not editing
+  if (!props.isEditing) {
+    document.value = {
+      title: "",
+      description: "",
+      type: "",
+      category: "",
+      tags: [],
+      content: "",
+      serviceId: document.value.serviceId || null,
+    };
+  } else {
+    // Ensure tags is an array when editing
+    if (!document.value.tags) {
+      document.value.tags = [];
+    }
+  }
+});
 
 const availableTags = [
   // Service-related tags
@@ -195,15 +264,6 @@ const availableTags = [
   "architecture",
   "design",
   "implementation",
-
-  // Diagram-related tags
-  "flowchart",
-  "sequence",
-  "er-diagram",
-  "component",
-  "deployment",
-  "state",
-  "activity",
 ];
 
 // Configure marked for syntax highlighting
@@ -238,32 +298,35 @@ const insertCodeBlock = () => {
 };
 
 const handleSave = async () => {
-  saving.value = true;
   try {
-    await emit("save", { ...document.value });
-  } finally {
-    saving.value = false;
+    // Process tags to ensure they are objects with a name property
+    const processedTags = document.value.tags.map((tag) => {
+      if (typeof tag === "object" && tag.name) {
+        return tag;
+      } else if (typeof tag === "string") {
+        return { name: tag };
+      } else {
+        return { name: String(tag) };
+      }
+    });
+
+    // Ensure serviceId is a number
+    const serviceId = document.value.serviceId
+      ? parseInt(document.value.serviceId, 10)
+      : null;
+
+    const documentToSave = {
+      ...document.value,
+      tags: processedTags,
+      serviceId,
+    };
+
+    emit("save", documentToSave);
+  } catch (error) {
+    console.error("Error preparing document for save:", error);
+    throw error;
   }
 };
-
-onMounted(() => {
-  // Initialize with empty document if not editing
-  if (!props.isEditing) {
-    document.value = {
-      title: "",
-      description: "",
-      type: "",
-      category: "",
-      tags: [],
-      content: "",
-    };
-  } else {
-    // Ensure tags is an array when editing
-    if (!document.value.tags) {
-      document.value.tags = [];
-    }
-  }
-});
 </script>
 
 <style>

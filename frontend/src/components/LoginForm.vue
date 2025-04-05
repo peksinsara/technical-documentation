@@ -40,7 +40,7 @@
             class="btn btn-primary w-full"
             :disabled="loading"
           >
-            {{ loading ? 'Signing in...' : 'Sign in' }}
+            {{ loading ? "Signing in..." : "Sign in" }}
           </button>
         </div>
 
@@ -53,28 +53,32 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
-import { useAuthStore } from '../stores/auth'
+import { ref } from "vue";
+import { useRouter } from "vue-router";
+import { useAuthStore } from "../stores/auth";
 
-const router = useRouter()
-const authStore = useAuthStore()
+const router = useRouter();
+const authStore = useAuthStore();
 
-const username = ref('')
-const password = ref('')
-const loading = ref(false)
-const error = ref('')
+const username = ref("");
+const password = ref("");
+const loading = ref(false);
+const error = ref("");
 
 const handleSubmit = async () => {
   try {
-    loading.value = true
-    error.value = ''
-    await authStore.login(username.value, password.value)
-    router.push('/documents')
+    loading.value = true;
+    error.value = "";
+    await authStore.login({
+      username: username.value,
+      password: password.value,
+    });
+    router.push("/documents");
   } catch (err) {
-    error.value = err.response?.data?.error || 'Failed to sign in'
+    console.error("Login error:", err);
+    error.value = err.response?.data?.error || "Failed to sign in";
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
-</script> 
+};
+</script>

@@ -1,5 +1,5 @@
 <template>
-  <div class="space-y-6">
+  <div class="container mx-auto px-4 py-8 max-w-7xl space-y-6">
     <div class="flex justify-between items-center">
       <h1 class="text-3xl font-bold text-dark-100">Diagrams</h1>
       <button class="btn btn-primary">New Diagram</button>
@@ -117,45 +117,7 @@ const diagramTypes = [
   { id: "er", name: "ER Diagram" },
 ];
 
-const diagrams = ref([
-  {
-    id: 1,
-    title: "System Architecture",
-    description:
-      "High-level overview of the system components and their interactions",
-    type: "architecture",
-    thumbnail:
-      "https://via.placeholder.com/400x225/1a1a1a/ffffff?text=System+Architecture",
-    author: {
-      name: "Sara Peksin",
-      avatar: "https://ui-avatars.com/api/?name=John+Doe",
-    },
-  },
-  {
-    id: 2,
-    title: "User Authentication Flow",
-    description: "Sequence diagram showing the user authentication process",
-    type: "sequence",
-    thumbnail:
-      "https://via.placeholder.com/400x225/1a1a1a/ffffff?text=Auth+Flow",
-    author: {
-      name: "Sara Peksin",
-      avatar: "https://ui-avatars.com/api/?name=Jane+Smith",
-    },
-  },
-  {
-    id: 3,
-    title: "Database Schema",
-    description: "ER diagram showing the database structure and relationships",
-    type: "er",
-    thumbnail:
-      "https://via.placeholder.com/400x225/1a1a1a/ffffff?text=DB+Schema",
-    author: {
-      name: "Sara Peksin",
-      avatar: "https://ui-avatars.com/api/?name=Mike+Johnson",
-    },
-  },
-]);
+const diagrams = ref([]);
 
 const filteredDiagrams = computed(() => {
   if (selectedType.value === "all") {

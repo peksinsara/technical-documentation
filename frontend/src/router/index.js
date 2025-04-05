@@ -15,6 +15,12 @@ const routes = [
     meta: { requiresAuth: true },
   },
   {
+    path: "/document/:id",
+    name: "DocumentView",
+    component: () => import("../views/DocumentView.vue"),
+    meta: { requiresAuth: true },
+  },
+  {
     path: "/services",
     name: "Services",
     component: () => import("../views/Services.vue"),

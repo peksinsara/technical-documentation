@@ -1,10 +1,8 @@
 <template>
-  <div class="space-y-6">
+  <div class="container mx-auto px-4 py-8 max-w-7xl space-y-6">
     <div class="flex justify-between items-center">
       <h1 class="text-3xl font-bold text-dark-100">Services</h1>
-      <button class="btn btn-primary">New Service</button>
     </div>
-
     <div class="flex space-x-4 overflow-x-auto pb-4">
       <button
         v-for="category in categories"
@@ -78,13 +76,7 @@
 
         <div class="mt-4 flex space-x-2">
           <button class="text-sm text-primary-500 hover:text-primary-400">
-            Edit
-          </button>
-          <button class="text-sm text-primary-500 hover:text-primary-400">
             View
-          </button>
-          <button class="text-sm text-red-500 hover:text-red-400">
-            Delete
           </button>
         </div>
       </div>
@@ -93,7 +85,12 @@
 </template>
 
 <script setup>
-import { ref, computed } from "vue";
+import { ref, computed, onMounted } from "vue";
+import { useServiceStore } from "../stores/service";
+import { useAuthStore } from "../stores/auth";
+
+const serviceStore = useServiceStore();
+const authStore = useAuthStore();
 
 const searchQuery = ref("");
 const selectedCategory = ref("all");
@@ -101,15 +98,11 @@ const selectedTag = ref("");
 
 const categories = [
   { id: "all", name: "All Services" },
-  { id: "omnichannel", name: "Omnichannel" },
-  { id: "crmconnector", name: "CRM Connector" },
-  { id: "clickhouse", name: "ClickHouse" },
-  { id: "analytics", name: "Analytics" },
-  { id: "messaging", name: "Messaging" },
-  { id: "pwproxy", name: "Pwproxy" },
+  { id: "crmconnector", name: "Crm Connector" },
   { id: "asterisk", name: "Asterisk" },
+  { id: "omnichannel", name: "Omnichannel" },
+  { id: "clickhouse", name: "Clickhouse" },
 ];
-
 const availableTags = [
   "api",
   "database",
@@ -121,42 +114,21 @@ const availableTags = [
   "search",
 ];
 
-const services = ref([
-  {
-    id: 1,
-    name: "User Service",
-    description:
-      "Handles user authentication, authorization, and profile management",
-    category: "omnichannel",
-    tags: ["api", "auth", "database"],
-    health: {
-      status: "healthy",
-      message: "All systems operational",
-    },
-  },
-  {
-    id: 2,
-    name: "Content Service",
-    description: "Manages document storage, versioning, and content delivery",
-    category: "storage",
-    tags: ["storage", "api", "cache"],
-    health: {
-      status: "degraded",
-      message: "High latency detected",
-    },
-  },
-  {
-    id: 3,
-    name: "Analytics Service",
-    description: "Processes and analyzes user data and system metrics",
-    category: "analytics",
-    tags: ["analytics", "database", "queue"],
-    health: {
-      status: "healthy",
-      message: "All systems operational",
-    },
-  },
-]);
+const services = ref([]);
+
+// Fetch services when component is mounted
+onMounted(async () => {
+  if (!authStore.isAuthenticated) {
+    return;
+  }
+
+  try {
+    await serviceStore.fetchServices();
+    services.value = serviceStore.services;
+  } catch (error) {
+    console.error("Failed to fetch services:", error);
+  }
+});
 
 const filteredServices = computed(() => {
   return services.value.filter((service) => {
